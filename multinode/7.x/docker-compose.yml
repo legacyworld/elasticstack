@@ -1,0 +1,175 @@
+
+
+version: '2.2'
+services:
+  ms01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ms01
+    environment:
+      - node.name=ms01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms02,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=true
+      - node.ingest=false
+      - node.data=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ms01:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  ms02:
+    depends_on:
+      - ms01
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ms02
+    environment:
+      - node.name=ms02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms01,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=true
+      - node.ingest=false
+      - node.data=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ms02:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  ms03:
+    depends_on:
+      - ms02
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ms03
+    environment:
+      - node.name=ms01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms02,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=true
+      - node.ingest=false
+      - node.data=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ms03:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  es01:
+    depends_on:
+      - ms03
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms01,ms02,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=false
+      - node.ingest=true
+      - node.data=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+  es02:
+    depends_on:
+      - es01
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms01,ms02,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=false
+      - node.ingest=true
+      - node.data=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  es03:
+    depends_on:
+      - es02
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=ms01,ms02,ms03
+      - cluster.initial_master_nodes=ms01,ms02,ms03
+      - bootstrap.memory_lock=true
+      - node.master=false
+      - node.ingest=true
+      - node.data=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data03:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: "http://es01:9200"
+    volumes:
+      - kibanadata:/usr/share/kibana/data
+    ports:
+      - 5601:5601
+    depends_on:
+      - es03
+    networks:
+      - elastic
+volumes:
+  ms01:
+    driver: local
+  ms02:
+    driver: local
+  ms03:
+    driver: local
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+  kibanadata:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
+
