@@ -1,9 +1,9 @@
-
-
 version: "2.2"
 
 services:
   setup:
+    profiles:
+      - first
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
@@ -32,7 +32,12 @@ services:
           "      - localhost\n"\
           "    ip:\n"\
           "      - 127.0.0.1\n"\
-          "      - ${HOST_IP}\n"\
+          "  - name: fleet\n"\
+          "    dns:\n"\
+          "      - fleet\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
           > config/certs/instances.yml;
           bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
           unzip config/certs/certs.zip -d config/certs;
@@ -54,6 +59,8 @@ services:
       retries: 120
 
   es01:
+    profiles:
+      - first
     depends_on:
       setup:
         condition: service_healthy
@@ -99,6 +106,8 @@ services:
       timeout: 10s
       retries: 120
   kibana:
+    profiles:
+      - first
     depends_on:
       es01:
         condition: service_healthy
@@ -127,28 +136,42 @@ services:
       retries: 120
 
   fleet:
-    depends_on:
-    - kibana
+    profiles:
+      - fleet
     image: docker.elastic.co/beats/elastic-agent:${STACK_VERSION}
     container_name: fleet
     restart: always
     user: root # note, synthetic browser monitors require this set to `elastic-agent`
     ports:
-      - ${FLEET_PORT}:8200
+      - ${FLEET_PORT}:8220
     environment:
       - FLEET_ENROLL=0
       - FLEET_INSECURE=1
-      - FLEET_URL=https://fleet:8200
+      - FLEET_URL=https://${HOST_IP}:${FLEET_PORT}
       - FLEET_SERVER_ENABLE=true
-      - FLEET_SERVER_ELASTICSEARCH_HOST=https://es01:9200
-      - FLEET_SERVER_SERVICE_TOKEN=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE2Njg3NDA5MjM1NTA6dnl6eUpWalJUaksxLWJ1blZuanJQZw
+      - FLEET_SERVER_ELASTICSEARCH_HOST=https://${HOST_IP}:${ES_PORT}
+      - FLEET_SERVER_POLICY=fleet-server-policy
+      - FLEET_SERVER_SERVICE_TOKEN=${FLEET_SERVER_SERVICE_TOKEN}
       - ELASTICSEARCH_CA=/usr/share/fleet/config/ca/ca.crt
       - FLEET_CA=/usr/share/fleet/config/ca/ca.crt
       - CERTIFICATE_AUTHORITIES=/usr/share/fleet/config/ca/ca.crt
-      - FLEET-SERVER-CERT=/usr/share/fleet/config/es01/es01.crt
-      - FLEET-SERVER-CERT-KEY=/usr/share/fleet/config/es01/es01.key
+      - FLEET-SERVER-CERT=/usr/share/fleet/config/fleet/fleet.crt
+      - FLEET-SERVER-CERT-KEY=/usr/share/fleet/config/fleet/fleet.key
+      - FLEET-SERVER-ES-CA-TRUSTED-FINGERPRINT=${FLEET-SERVER-ES-CA-TRUSTED-FINGERPRINT}
     volumes:
       - certs:/usr/share/fleet/config/
+  elastic-agent:
+    profiles:
+    - agent
+    image: docker.elastic.co/beats/elastic-agent:${STACK_VERSION}
+    container_name: elastic-agent
+    restart: always
+    user: root
+    environment:
+    - FLEET_ENROLLMENT_TOKEN=${FLEET_ENROLLMENT_TOKEN}
+    - FLEET_ENROLL=1
+    - FLEET_INSECURE=1
+    - FLEET_URL=https://fleet:8220
 
 volumes:
   certs:
