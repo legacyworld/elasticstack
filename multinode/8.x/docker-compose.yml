@@ -94,7 +94,7 @@ services:
       - node.name=master01
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=master01,master02,master03
-      - discovery.seed_hosts=master01,master02,master03,es01,es02,es03
+      - discovery.seed_hosts=master01,master02,master03
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
@@ -136,7 +136,7 @@ services:
       - node.name=master02
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=master01,master02,master03
-      - discovery.seed_hosts=master01,master02,master03,es01,es02,es03
+      - discovery.seed_hosts=master01,master02,master03
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
@@ -178,7 +178,7 @@ services:
       - node.name=master03
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=master01,master02,master03
-      - discovery.seed_hosts=master01,master02,master03,es01,es02,es03
+      - discovery.seed_hosts=master01,master02,master03
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
